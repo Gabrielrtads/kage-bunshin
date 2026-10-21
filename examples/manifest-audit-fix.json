@@ -1,0 +1,16 @@
+[
+  {
+    "id": "frontend_worker",
+    "engine": "claude",
+    "mode": "execute",
+    "worktree": true,
+    "prompt": "Implement the responsive navigation bar component with mobile hamburger menu."
+  },
+  {
+    "id": "backend_worker",
+    "engine": "codex",
+    "mode": "execute",
+    "worktree": true,
+    "prompt": "Write the REST API route handlers and Zod validation schemas for user checkout."
+  }
+]

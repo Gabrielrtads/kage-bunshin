@@ -1,0 +1,23 @@
+[
+  {
+    "id": "audit_security",
+    "engine": "claude",
+    "mode": "plan",
+    "effort": "high",
+    "prompt": "Audit authentication, session management, and RLS policies for vulnerabilities."
+  },
+  {
+    "id": "audit_perf",
+    "engine": "codex",
+    "mode": "plan",
+    "effort": "medium",
+    "prompt": "Analyze database queries, index usage, and identify N+1 query bottlenecks."
+  },
+  {
+    "id": "audit_a11y",
+    "engine": "agy",
+    "mode": "plan",
+    "effort": "low",
+    "prompt": "Check WCAG 2.1 accessibility compliance, color contrast, and keyboard navigation."
+  }
+]
