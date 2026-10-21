@@ -1,0 +1,30 @@
+[
+  {
+    "id": "a11y_and_docs_scan",
+    "engine": "agy",
+    "mode": "plan",
+    "effort": "low",
+    "prompt": "Scan src/components/ for WCAG 2.1 compliance and verify JSDoc coverage on all exported utilities."
+  },
+  {
+    "id": "type_hygiene_check",
+    "engine": "agy",
+    "mode": "plan",
+    "effort": "low",
+    "prompt": "Audit TypeScript interfaces in src/types/ to find any implicit 'any' or loose type assertions."
+  },
+  {
+    "id": "sql_query_optimization",
+    "engine": "codex",
+    "mode": "plan",
+    "effort": "medium",
+    "prompt": "Analyze database queries in src/server/db/ for N+1 issues and suggest composite indexes."
+  },
+  {
+    "id": "deep_security_and_auth_audit",
+    "engine": "claude",
+    "mode": "plan",
+    "effort": "high",
+    "prompt": "Conduct deep adversarial audit of authentication flows, session revocations, and Supabase RLS policies."
+  }
+]

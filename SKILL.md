@@ -7,7 +7,7 @@ category: orchestration
 # 🐝⚡ Vibe Swarm (`vibe-swarm`)
 
 > **Concurrent CLI Agent Execution Engine with Anti-Deadlock Watchdogs & Isolated Worktrees.**  
-> Orchestrate multiple **Claude Code**, **OpenAI Codex**, and **Antigravity CLI** instances in parallel directly from your terminal or AI workflows.
+> Orchestrate multiple **Claude Code**, **OpenAI Codex**, and **Antigravity CLI (Gemini)** instances in parallel directly from your terminal or AI workflows.
 
 ---
 
@@ -15,6 +15,7 @@ category: orchestration
 
 - When you have **2 or more independent tasks** that can run simultaneously without sequential dependencies.
 - To execute multi-perspective code audits (Security + Performance + Accessibility) in parallel.
+- To run **Cost-Smart Hybrid Swarms**: route high-volume bulk scanning to low-cost Gemini Flash (`agy`) and reserve Claude Code (`claude`) / Codex (`codex`) for deep reasoning and execution.
 - To run batch migrations, code translations, or multi-component generation across isolated Git worktrees.
 - To collect structured JSON-RPC output from multiple agent executions into a unified summary.
 
@@ -22,22 +23,22 @@ category: orchestration
 
 ## 🚀 Quick Usage
 
-### 1. Running from a JSON Manifest
+### 1. Running a Cost-Smart Hybrid Swarm
 
 ```bash
 # PowerShell (Windows)
-pwsh -File scripts/invoke-vibe-swarm.ps1 -ManifestPath examples/manifest-parallel-tasks.json
+pwsh -File scripts/invoke-vibe-swarm.ps1 -ManifestPath examples/manifest-cost-smart-swarm.json
 
 # Bash (Linux/macOS)
-bash scripts/invoke-vibe-swarm.sh --manifest examples/manifest-parallel-tasks.json
+bash scripts/invoke-vibe-swarm.sh --manifest examples/manifest-cost-smart-swarm.json
 ```
 
 ### 2. Passing Tasks Directly via JSON
 
 ```bash
 pwsh -File scripts/invoke-vibe-swarm.ps1 -ManifestJson '[
-  {"id": "task1", "engine": "claude", "prompt": "Audit src/auth.ts"},
-  {"id": "task2", "engine": "codex", "prompt": "Audit src/database.ts"}
+  {"id": "task1", "engine": "agy", "effort": "low", "prompt": "Scan src/ for a11y issues"},
+  {"id": "task2", "engine": "claude", "effort": "high", "prompt": "Audit src/auth.ts for security"}
 ]'
 ```
 
