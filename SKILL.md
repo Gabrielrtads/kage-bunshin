@@ -1,10 +1,10 @@
 ---
-name: parallel-agent-runner
+name: vibe-swarm
 description: High-performance concurrent runner and watchdog for Claude Code, OpenAI Codex, and Antigravity CLIs. Run multi-agent batch tasks, parallel code reviews, and JSON manifests without terminal deadlocks or zombie processes.
 category: orchestration
 ---
 
-# Parallel Agent Runner (`parallel-agent-runner`)
+# 🐝⚡ Vibe Swarm (`vibe-swarm`)
 
 > **Concurrent CLI Agent Execution Engine with Anti-Deadlock Watchdogs & Isolated Worktrees.**  
 > Orchestrate multiple **Claude Code**, **OpenAI Codex**, and **Antigravity CLI** instances in parallel directly from your terminal or AI workflows.
@@ -26,16 +26,16 @@ category: orchestration
 
 ```bash
 # PowerShell (Windows)
-pwsh -File scripts/invoke-parallel-runner.ps1 -ManifestPath examples/manifest-parallel-tasks.json
+pwsh -File scripts/invoke-vibe-swarm.ps1 -ManifestPath examples/manifest-parallel-tasks.json
 
 # Bash (Linux/macOS)
-bash scripts/invoke-parallel-runner.sh --manifest examples/manifest-parallel-tasks.json
+bash scripts/invoke-vibe-swarm.sh --manifest examples/manifest-parallel-tasks.json
 ```
 
 ### 2. Passing Tasks Directly via JSON
 
 ```bash
-pwsh -File scripts/invoke-parallel-runner.ps1 -ManifestJson '[
+pwsh -File scripts/invoke-vibe-swarm.ps1 -ManifestJson '[
   {"id": "task1", "engine": "claude", "prompt": "Audit src/auth.ts"},
   {"id": "task2", "engine": "codex", "prompt": "Audit src/database.ts"}
 ]'
@@ -46,7 +46,7 @@ pwsh -File scripts/invoke-parallel-runner.ps1 -ManifestJson '[
 For tasks that edit or generate code (`mode: "execute"`), enable worktree isolation to avoid file write collisions:
 
 ```bash
-pwsh -File scripts/invoke-parallel-runner.ps1 -ManifestPath tasks.json -UseWorktreeForEdits
+pwsh -File scripts/invoke-vibe-swarm.ps1 -ManifestPath tasks.json -UseWorktreeForEdits
 ```
 
 ---

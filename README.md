@@ -1,4 +1,4 @@
-# ⚡ Parallel Agent Runner (`parallel-agent-runner`)
+# 🐝⚡ Vibe Swarm (`vibe-swarm`)
 
 [![skills.sh compatible](https://img.shields.io/badge/skills.sh-compatible-6366f1?style=for-the-badge)](https://skills.sh)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
@@ -16,7 +16,7 @@ Modern AI coding assistants (Claude Code, Codex, Antigravity) are designed as **
 
 When you need to:
 - Run **multi-agent code reviews** (Security + Performance + Accessibility)
-- Execute **10 parallel refactorings** or file translations
+- Execute **parallel refactorings** or batch migrations
 - Test competing model implementations side-by-side
 
 Developers are forced to manually open multiple terminal tabs or resort to hacky background bash scripts (`&`) that **hang on interactive prompts**, **leak memory**, or **collide on shared files**.
@@ -25,7 +25,7 @@ Developers are forced to manually open multiple terminal tabs or resort to hacky
 
 ## 💡 The Solution: Fan-Out / Fan-In Engine with Active Watchdogs
 
-`parallel-agent-runner` treats your local CLI engines as headless concurrent workers. It provides process-level orchestration with strict safety controls:
+`vibe-swarm` treats your local CLI engines as headless concurrent workers. It provides process-level orchestration with strict safety controls:
 
 ```
                            ┌──> [Worker 1: Claude Code]   ──> Security Audit (Plan Mode)
@@ -50,19 +50,19 @@ Developers are forced to manually open multiple terminal tabs or resort to hacky
 Install directly into your agent environment using the open Skills CLI:
 
 ```bash
-npx skills add Gabrielrtads/parallel-agent-runner
+npx skills add Gabrielrtads/vibe-swarm
 ```
 
 Or install for specific agents:
 ```bash
 # For Claude Code
-npx skills add Gabrielrtads/parallel-agent-runner --agent claude-code
+npx skills add Gabrielrtads/vibe-swarm --agent claude-code
 
 # For OpenAI Codex
-npx skills add Gabrielrtads/parallel-agent-runner --agent codex
+npx skills add Gabrielrtads/vibe-swarm --agent codex
 
 # For Google Antigravity
-npx skills add Gabrielrtads/parallel-agent-runner --agent antigravity
+npx skills add Gabrielrtads/vibe-swarm --agent antigravity
 ```
 
 ---
@@ -103,10 +103,10 @@ Execute the batch concurrently:
 
 ```bash
 # Windows (PowerShell)
-pwsh -File scripts/invoke-parallel-runner.ps1 -ManifestPath manifest.json
+pwsh -File scripts/invoke-vibe-swarm.ps1 -ManifestPath manifest.json
 
 # Linux / macOS (Bash)
-bash scripts/invoke-parallel-runner.sh --manifest manifest.json
+bash scripts/invoke-vibe-swarm.sh --manifest manifest.json
 ```
 
 ---
@@ -137,7 +137,7 @@ When tasks write to disk, enable `-UseWorktreeForEdits` to run each agent in an 
 Run with isolated worktrees:
 
 ```bash
-pwsh -File scripts/invoke-parallel-runner.ps1 -ManifestPath manifest.json -UseWorktreeForEdits
+pwsh -File scripts/invoke-vibe-swarm.ps1 -ManifestPath manifest.json -UseWorktreeForEdits
 ```
 
 Upon completion, each branch is ready for review or merging without git conflicts.
@@ -149,7 +149,7 @@ Upon completion, each branch is ready for review or merging without git conflict
 Pass `-Json` to feed the aggregated result into CI/CD pipelines, dashboards, or parent orchestrators:
 
 ```bash
-pwsh -File scripts/invoke-parallel-runner.ps1 -ManifestPath manifest.json -Json
+pwsh -File scripts/invoke-vibe-swarm.ps1 -ManifestPath manifest.json -Json
 ```
 
 **Output schema:**
@@ -193,7 +193,7 @@ pwsh -File scripts/invoke-parallel-runner.ps1 -ManifestPath manifest.json -Json
 
 ## 🇧🇷 Documentação em Português
 
-### O que é o `parallel-agent-runner`?
+### O que é o `vibe-swarm`?
 É um motor de **execução concorrente e paralela para CLIs de inteligência artificial** (`claude`, `codex` e `agy`). Ele resolve o gargalo de rodar tarefas sequencialmente, permitindo disparar lotes de prompts, auditorias multi-modelo e refatorações simultâneas no seu terminal.
 
 ### Destaques:
