@@ -1,0 +1,26 @@
+[
+  {
+    "id": "clone-alpha-tdd",
+    "engine": "claude",
+    "mode": "execute",
+    "worktree": true,
+    "timeoutSeconds": 600,
+    "prompt": "Clone 1 (Alpha): Implement comprehensive unit and regression tests in tests/ for the new feature."
+  },
+  {
+    "id": "clone-beta-logic",
+    "engine": "claude",
+    "mode": "execute",
+    "worktree": true,
+    "timeoutSeconds": 600,
+    "prompt": "Clone 2 (Beta): Implement the core business logic and functions to make all tests pass."
+  },
+  {
+    "id": "clone-gamma-docs",
+    "engine": "claude",
+    "mode": "execute",
+    "worktree": true,
+    "timeoutSeconds": 600,
+    "prompt": "Clone 3 (Gamma): Audit TypeScript types, refine error handling, and update README/documentation."
+  }
+]
