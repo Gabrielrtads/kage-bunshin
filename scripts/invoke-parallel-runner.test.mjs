@@ -86,3 +86,15 @@ test("worktree: vazia é desmontada, com trabalho é preservada", () => {
   assert.ok(branches(a.dir).some((b) => b.startsWith("task/swarmv2-cheia-")));
 });
 
+test("escopo cirurgico de mcp: mcp_servers e allow_mcp passam as flags corretas", () => {
+  const a = ambiente();
+  const r = a.rodar([
+    { id: "c1", engine: "claude", mode: "execute", mcp_servers: [], prompt: "teste" },
+    { id: "c2", engine: "codex", mode: "execute", mcp_servers: [], prompt: "teste" },
+  ]);
+  assert.equal(r.codigo, 0, r.saida);
+  assert.match(r.chamadas, /claude .*--strict-mcp-config/);
+  assert.match(r.chamadas, /codex .*--ignore-user-config/);
+});
+
+

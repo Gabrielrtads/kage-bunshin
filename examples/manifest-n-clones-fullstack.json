@@ -5,6 +5,7 @@
     "mode": "execute",
     "worktree": true,
     "timeoutSeconds": 600,
+    "mcp_servers": ["supabase"],
     "prompt": "Clone 1: Define PostgreSQL schema migrations, Supabase RLS security policies, and TypeScript interfaces."
   },
   {
@@ -13,6 +14,7 @@
     "mode": "execute",
     "worktree": true,
     "timeoutSeconds": 600,
+    "mcp_servers": [],
     "prompt": "Clone 2: Implement server action handlers, input validation with Zod, and error handling."
   },
   {
@@ -21,6 +23,7 @@
     "mode": "execute",
     "worktree": true,
     "timeoutSeconds": 600,
+    "mcp_servers": ["playwright"],
     "prompt": "Clone 3: Build responsive Tailwind UI components, accessible dialogs, and loading skeletons."
   },
   {
@@ -29,6 +32,7 @@
     "mode": "execute",
     "worktree": true,
     "timeoutSeconds": 600,
+    "mcp_servers": [],
     "prompt": "Clone 4: Implement comprehensive unit tests, mock external APIs, and ensure 100% test coverage."
   },
   {
@@ -37,6 +41,7 @@
     "mode": "execute",
     "worktree": true,
     "timeoutSeconds": 600,
+    "mcp_servers": ["playwright"],
     "prompt": "Clone 5: Write Playwright E2E integration tests, update OpenAPI documentation, and verify WCAG a11y."
   }
 ]
