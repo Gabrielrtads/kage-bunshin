@@ -66,11 +66,34 @@ Route tasks according to **capability vs. cost profile** to save 80%+ on AI toke
 
 ---
 
+### 3. 🎯 Surgical MCP Scoping: Tool Chakra Partitioning
+
+Why give all tools to all clones? A database clone doesn't need Playwright, and a security auditor doesn't need Supabase write permissions:
+
+| The Problem: "All MCPs for Everyone" | 🎯 Kage Bunshin Surgical Scoping (`mcp_servers`) |
+|---|---|
+| **Context Bloat:** 15k–30k tokens wasted per clone on MCP schemas | **Zero Waste:** Clones without tools load 0 schemas, saving 100k+ tokens across squads. |
+| **Tool Confusion:** 50+ tools cause models to call incorrect functions | **100% Precision:** Clones only see tools directly relevant to their subtask. |
+| **Accidental Mutations:** Read-only auditors could mutate live DBs | **Blast Radius Zero:** Non-backend clones physically lack database tools. |
+| **System Overhead:** 60+ OS processes spawned for MCP servers | **Lean Footprint:** Zero background processes spawned for tool-free clones. |
+
+Declare `mcp_servers` per clone in your manifest:
+```json
+[
+  { "id": "c1-db", "engine": "codex", "mcp_servers": ["supabase"], "prompt": "Create DB migrations" },
+  { "id": "c2-ui", "engine": "claude", "mcp_servers": ["playwright"], "prompt": "Verify responsive UI layout" },
+  { "id": "c3-audit", "engine": "agy", "mcp_servers": [], "prompt": "Pure code audit (zero MCP overhead)" }
+]
+```
+
+---
+
 ## 🍥 The Ninja Lore vs. Terminal Reality
 
 | Naruto Lore (影分身) | Software Architecture Parallel | Terminal Reality |
 |---|---|---|
 | **Chakra Partitioning** | **Token & RAM Throttling** | Distributes system memory and API limits evenly. Prevents system crash (OOM). |
+| **Specialized Jutsu Allocation** | **Surgical MCP Scoping** | Assign database tools only to backend clones, browser tools to UI clones, and 0 MCPs to auditors to eliminate tool confusion and save 30k+ tokens per clone. |
 | **Physical Solid Clones** | **Isolated Git Worktrees** | Clones are not fake chat prompts; they are real headless CLI processes in dedicated directories. |
 | **Arbitrary Clone Count ($N$)** | **Task Decomposition Scaling** | Spawn 2, 3, 5, 8+ clones as required by task granularity, managed by a concurrency pool. |
 | **Memory Reintegration (Dispel)** | **Git Fast-Forward & Merge** | When a clone finishes its mission, all code and test results are reintegrated back into the main branch. |

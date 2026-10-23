@@ -173,7 +173,13 @@ foreach ($task in $parsedTasks) {
         $resolvedWorkdir
     }
     $taskTimeout = if ($task.ContainsKey('timeout_seconds') -and $task['timeout_seconds']) { [int]$task['timeout_seconds'] } else { $TimeoutSeconds }
-    $taskAllowMcp = if ($task.ContainsKey('allow_mcp') -and $task['allow_mcp']) { @($task['allow_mcp']) } else { @() }
+    $taskAllowMcp = if ($task.ContainsKey('allow_mcp') -and $task['allow_mcp']) {
+        @($task['allow_mcp'])
+    } elseif ($task.ContainsKey('mcp_servers') -and $task['mcp_servers']) {
+        @($task['mcp_servers'])
+    } else {
+        @()
+    }
     $taskNeedWorktree = if ($task.ContainsKey('worktree') -and $task['worktree']) { [bool]$task['worktree'] } else { $UseWorktreeForEdits.IsPresent }
 
     # O manifesto e entrada externa: so valores conhecidos chegam a git e aos CLIs.
@@ -241,6 +247,9 @@ foreach ($task in $parsedTasks) {
                 # acceptEdits: edita so dentro da pasta; comando arriscado e negado (testado).
                 [void]$arguments.Add('--permission-mode')
                 [void]$arguments.Add('acceptEdits')
+                if (@($taskAllowMcp).Length -eq 0) {
+                    [void]$arguments.Add('--strict-mcp-config')
+                }
             }
             [void]$arguments.Add('--output-format')
             [void]$arguments.Add('json')
@@ -273,7 +282,7 @@ foreach ($task in $parsedTasks) {
             }
 
             $allowed = @($taskAllowMcp)
-            if ($allowed.Count -gt 0) {
+            if ($allowed.Length -gt 0) {
                 foreach ($mcpName in (Get-CodexMcpNames)) {
                     if ($allowed -notcontains $mcpName) {
                         [void]$arguments.Add('--config')
@@ -286,7 +295,7 @@ foreach ($task in $parsedTasks) {
             [void]$arguments.Add('--ephemeral')
             [void]$arguments.Add('--skip-git-repo-check')
             [void]$arguments.Add('--json')
-            if ($allowed.Count -eq 0) { [void]$arguments.Add('--ignore-user-config') }
+            if ($allowed.Length -eq 0) { [void]$arguments.Add('--ignore-user-config') }
             [void]$arguments.Add('-')
             $promptViaStdin = $true
         }

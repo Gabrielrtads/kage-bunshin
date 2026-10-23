@@ -63,6 +63,18 @@ pwsh -File scripts/invoke-kage-bunshin.ps1 -ManifestJson '[
 pwsh -File scripts/invoke-kage-bunshin.ps1 -ManifestPath examples/manifest-cost-smart-swarm.json
 ```
 
+### 4. Surgical MCP Scoping per Clone (Tool Chakra Partitioning)
+
+Assign only the necessary MCP servers per clone to eliminate tool confusion, prevent accidental mutations, and save 15,000–30,000 prompt tokens per clone:
+
+```json
+[
+  { "id": "c1-db", "engine": "codex", "worktree": true, "mcp_servers": ["supabase"], "prompt": "Create database migration" },
+  { "id": "c2-ui", "engine": "claude", "worktree": true, "mcp_servers": ["playwright"], "prompt": "Verify responsive UI layout" },
+  { "id": "c3-audit", "engine": "agy", "worktree": false, "mcp_servers": [], "prompt": "Security audit (Zero MCPs needed)" }
+]
+```
+
 ---
 
 ## 📋 Parameter Reference
