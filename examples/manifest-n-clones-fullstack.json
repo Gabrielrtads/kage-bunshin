@@ -1,0 +1,42 @@
+[
+  {
+    "id": "clone-1-db-schema",
+    "engine": "claude",
+    "mode": "execute",
+    "worktree": true,
+    "timeoutSeconds": 600,
+    "prompt": "Clone 1: Define PostgreSQL schema migrations, Supabase RLS security policies, and TypeScript interfaces."
+  },
+  {
+    "id": "clone-2-backend-api",
+    "engine": "claude",
+    "mode": "execute",
+    "worktree": true,
+    "timeoutSeconds": 600,
+    "prompt": "Clone 2: Implement server action handlers, input validation with Zod, and error handling."
+  },
+  {
+    "id": "clone-3-frontend-ui",
+    "engine": "claude",
+    "mode": "execute",
+    "worktree": true,
+    "timeoutSeconds": 600,
+    "prompt": "Clone 3: Build responsive Tailwind UI components, accessible dialogs, and loading skeletons."
+  },
+  {
+    "id": "clone-4-tdd-tests",
+    "engine": "claude",
+    "mode": "execute",
+    "worktree": true,
+    "timeoutSeconds": 600,
+    "prompt": "Clone 4: Implement comprehensive unit tests, mock external APIs, and ensure 100% test coverage."
+  },
+  {
+    "id": "clone-5-e2e-and-docs",
+    "engine": "claude",
+    "mode": "execute",
+    "worktree": true,
+    "timeoutSeconds": 600,
+    "prompt": "Clone 5: Write Playwright E2E integration tests, update OpenAPI documentation, and verify WCAG a11y."
+  }
+]
