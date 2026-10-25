@@ -5,6 +5,7 @@
 [![Zero-Dependency](https://img.shields.io/badge/Dependencies-Zero-emerald?style=for-the-badge)](#)
 [![Multi-CLI](https://img.shields.io/badge/Supports-Claude_|_Codex_|_Antigravity-orange?style=for-the-badge)](#)
 [![Methodology](https://img.shields.io/badge/Jutsu-Kage_Bunshin_no_Jutsu-crimson?style=for-the-badge)](#)
+[![CI & Test Suite](https://github.com/Gabrielrtads/kage-bunshin/actions/workflows/ci.yml/badge.svg)](https://github.com/Gabrielrtads/kage-bunshin/actions)
 
 [![GitHub stars](https://img.shields.io/github/stars/Gabrielrtads/kage-bunshin?style=social)](https://github.com/Gabrielrtads/kage-bunshin/stargazers)
 
