@@ -40,6 +40,109 @@ Developers usually watch a single agent work sequentially, bottlenecking develop
 
 ---
 
+## 🗺️ Architectural Diagrams & Mission Blueprints
+
+### 1. 🥷 The Canonical Triad: Zero-Conflict Self-Cloning
+When tackling a full feature, a single agent gets bogged down doing testing, implementation, and documentation sequentially. `kage-bunshin` spawns identical clones of the same CLI (e.g. 3x Claude Code) into isolated physical Git Worktrees, merging their work on dispel without git conflicts.
+
+```mermaid
+flowchart TD
+    DEV["🧑‍💻 Developer (Single Prompt)"] --> JUTSU["🥷 Kage Bunshin Invocation"]
+    
+    subgraph ISOLATION ["Physical Isolation (Dedicated Git Worktrees)"]
+        JUTSU --> C1["Clone 1 (Alpha / TDD)<br/>📂 .worktrees/c1-tests<br/>Drafts unit & regression suites"]
+        JUTSU --> C2["Clone 2 (Beta / Core)<br/>📂 .worktrees/c2-logic<br/>Implements business logic in src/"]
+        JUTSU --> C3["Clone 3 (Gamma / Docs)<br/>📂 .worktrees/c3-docs<br/>Generates OpenAPI & strict types"]
+    end
+    
+    C1 --> DISPEL["💥 Dispel (Jutsu Termination)"]
+    C2 --> DISPEL
+    C3 --> DISPEL
+    
+    DISPEL --> MERGE["🌿 Clean Fast-Forward Merge<br/>(Zero File Collisions)"]
+```
+
+---
+
+### 2. 🏯 The Shinobi Alliance: Cost-Smart Swarm Architecture
+Why burn high-tier reasoning tokens reading thousands of lines of logs or basic schemas? Route each subtask to the optimal model based on capability and cost profile:
+
+```mermaid
+flowchart LR
+    subgraph MISSION ["🎯 Large Scale Architectural Refactor"]
+        T1["Scan 2,000 files & Raw System Logs"]
+        T2["SQL Schemas, Migrations & RLS Policies"]
+        T3["Mission-Critical Architecture & Core Logic"]
+    end
+
+    T1 -->|Zero/Ultra-Low Cost & Infinite Context| AGY["⚡ Gemini Flash (Antigravity)<br/>High-throughput context ingest"]
+    T2 -->|Database Optimization Specialist| CODEX["🧠 GPT-6 / Codex<br/>Fast backend APIs & SQL queries"]
+    T3 -->|Frontier Deep Reasoning| CLAUDE["👑 Claude Sonnet / Opus<br/>Senior architecture & business rules"]
+
+    AGY --> REPORT["📊 Consolidated Multi-Model Report"]
+    CODEX --> REPORT
+    CLAUDE --> REPORT
+```
+
+---
+
+### 3. 🛡️ 4D Concurrent Code Audit: The Parallel Red Team
+Instead of waiting 45 minutes for sequential audits (security, then performance, then accessibility, then typings), 4 shadow clones inspect the pull request simultaneously from different adversarial angles:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as 🧑‍💻 Lead Engineer
+    participant Jutsu as 🥷 Kage-Bunshin Engine
+    participant Sec as 🛡️ Security Clone
+    participant Perf as ⚡ Performance Clone
+    participant A11y as 👁️ Accessibility Clone
+    participant Type as 📐 Strict Types Clone
+    
+    Dev->>Jutsu: Audit Pull Request #42
+    par Concurrent Infiltration (Zero Blocking)
+        Jutsu->>Sec: Scan for OWASP Top 10 & secret leaks
+        Jutsu->>Perf: Detect memory leaks & O(n²) bottlenecks
+        Jutsu->>A11y: Audit WCAG 2.1 AA contrast & keyboard nav
+        Jutsu->>Type: Verify strict null checks & edge types
+    end
+    Sec-->>Jutsu: 0 critical vulnerabilities found
+    Perf-->>Jutsu: Suggest memoization in hot-path render
+    A11y-->>Jutsu: Missing aria-label on search input
+    Type-->>Jutsu: 100% strict type safety verified
+    Jutsu-->>Dev: 📑 Aggregated Multi-Perspective Verdict in 45s
+```
+
+---
+
+### 4. 🎯 Surgical MCP Scoping: Tool Chakra Partitioning
+Loading 15+ MCP servers into a single agent wastes 30,000 tokens on schemas and causes catastrophic tool hallucinations. Kage-Bunshin isolates tools per clone so each shinobi only sees what it needs:
+
+```mermaid
+flowchart TD
+    ROOT["🎛️ Kage-Bunshin Task Manifest"]
+
+    subgraph C_DB ["Clone 1: Database Engineer"]
+        ROOT --> DB_RUNNER["Executes Migrations"]
+        DB_RUNNER --- MCP_SUPA["🔌 Supabase MCP Only"]
+        style MCP_SUPA fill:#10B981,stroke:#059669,color:#fff
+    end
+
+    subgraph C_UI ["Clone 2: UI/UX Verifier"]
+        ROOT --> UI_RUNNER["Simulates User Journeys"]
+        UI_RUNNER --- MCP_PW["🔌 Playwright MCP Only"]
+        style MCP_PW fill:#3B82F6,stroke:#2563EB,color:#fff
+    end
+
+    subgraph C_AUDIT ["Clone 3: Static Auditor"]
+        ROOT --> AUDIT_RUNNER["Pure Code Review"]
+        AUDIT_RUNNER --- ZERO_MCP["🛡️ ZERO MCPs (Saves 30,000 tokens)"]
+        style ZERO_MCP fill:#64748B,stroke:#475569,color:#fff
+    end
+```
+
+---
+
 ## 🌀 Two Execution Philosophies
 
 ### 1. 🥷 The True Kage Bunshin (Mono-Engine Self-Cloning: $N$ Clones)
@@ -217,6 +320,12 @@ pwsh -File scripts/invoke-kage-bunshin.ps1 -ManifestJson '[
 - **3 clones não é um teto conceitual:** É apenas a tríade canônica ilustrativa (Testes TDD + Lógica de Negócio + Documentação/Tipos).
 - **Escala Arbitrária ($N$ clones):** Se uma missão exigir 2 clones para refatorar duas rotas, ou 5 clones para um esquadrão Full-Stack completo (Banco, Backend, Frontend UI, E2E e Docs), basta declarar as tarefas no manifesto.
 - **Pool de Concorrência Controlada:** O parâmetro `-MaxConcurrency` (padrão `8`, configurável de 1 a 32) garante que o chakra da máquina (RAM, CPU e limites de requisições de API) não seja esgotado, processando tarefas excedentes em fila organizada.
+
+### 🗺️ Cenários Ilustrados nos Diagramas Acima:
+1. **A Tríade Canônica:** 3 clones do mesmo modelo desenvolvendo TDD, Core e Docs em paralelo sem colisão de Git.
+2. **A Aliança Shinobi:** Gemini Flash faz a varredura pesada a custo zero, Codex foca em SQL/Banco e Claude cuida da arquitetura nobre.
+3. **Auditoria Paralela 4D:** 4 clones atacam o mesmo PR simultaneamente (Segurança, Performance, Acessibilidade e Tipos).
+4. **Particionamento Cirúrgico de MCPs:** Cada clone só recebe as ferramentas necessárias, eliminando alucinações e economizando 30k tokens por clone.
 
 ### 🛡️ Proteção de Chakra (Watchdog Anti-Deadlock):
 - **Sem Travamentos:** O script fecha o `stdin` imediatamente após o disparo do prompt, impedindo que o terminal congele aguardando confirmações interativas.
