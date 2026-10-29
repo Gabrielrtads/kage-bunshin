@@ -211,6 +211,15 @@ for ($i = 0; $i -lt $parsedTasks.Count; $i++) {
     $t['_cliCommand'] = Get-ExecutableCommand -Name $motor
 }
 
+# Diretorio privado para configs de MCP filtradas (podem conter credenciais dos
+# servidores permitidos). Nunca vai em argv: a lista de processos e visivel a
+# qualquer outro processo do mesmo usuario.
+$mcpConfigDir = Join-Path $env:TEMP ("swarmv2-mcp-" + [guid]::NewGuid().ToString('N'))
+[void](New-Item -ItemType Directory -Path $mcpConfigDir -Force)
+try {
+    icacls $mcpConfigDir /inheritance:r /grant:r "$($env:USERNAME):(OI)(CI)F" 2>&1 | Out-Null
+} catch {}
+
 $activeJobs = [System.Collections.Generic.List[PSCustomObject]]::new()
 $taskIndex = 0
 
@@ -299,8 +308,13 @@ foreach ($task in $parsedTasks) {
             }
             [void]$arguments.Add('--strict-mcp-config')
             if ($task['_mcpPolicy'].ConfigJson) {
+                # Grava em arquivo (0600 equivalente via icacls) em vez de argv:
+                # --mcp-config aceita arquivo JSON ou string, e o arquivo nao
+                # aparece na lista de processos nem em logs de auditoria do SO.
+                $mcpConfigFile = Join-Path $mcpConfigDir ("$taskId.json")
+                Set-Content -LiteralPath $mcpConfigFile -Value $task['_mcpPolicy'].ConfigJson -NoNewline -Encoding UTF8
                 [void]$arguments.Add('--mcp-config')
-                [void]$arguments.Add($task['_mcpPolicy'].ConfigJson)
+                [void]$arguments.Add($mcpConfigFile)
             }
             [void]$arguments.Add('--output-format')
             [void]$arguments.Add('json')
@@ -575,6 +589,8 @@ foreach ($job in $activeJobs) {
         }
     }
 }
+
+Remove-Item -LiteralPath $mcpConfigDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # 5. Consolidacao e Apresentacao dos Resultados (Fan-In)
 $successCount = @($activeJobs | Where-Object { $_.Status -eq 'success' }).Count

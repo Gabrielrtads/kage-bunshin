@@ -29,7 +29,18 @@ function ambiente({ git = true } = {}) {
   for (const engine of ["claude", "codex", "agy"]) {
     fs.writeFileSync(path.join(bin, engine), `#!/usr/bin/env bash
 input=$(cat)
-jq -cn --arg engine '${engine}' --arg cwd "$PWD" --arg stdin "$input" --args '{engine:$engine,cwd:$cwd,stdin:$stdin,args:$ARGS.positional}' -- "$@" >> "$FAKE_LOG"
+mcp_content=""
+for ((i=1; i<=$#; i++)); do
+  if [[ "\${!i}" == "--mcp-config" ]]; then
+    next=$((i+1))
+    mcp_path="\${!next}"
+    [[ -f "$mcp_path" ]] && mcp_content=$(cat "$mcp_path")
+    break
+  fi
+done
+# Le o arquivo de --mcp-config AGORA (como o claude/codex real leriam), antes
+# que o orquestrador o remova no cleanup de fim de execucao.
+jq -cn --arg engine '${engine}' --arg cwd "$PWD" --arg stdin "$input" --arg mcpConfigContent "$mcp_content" --args '{engine:$engine,cwd:$cwd,stdin:$stdin,mcpConfigContent:$mcpConfigContent,args:$ARGS.positional}' -- "$@" >> "$FAKE_LOG"
 if [[ -v FAKE_BARRIER ]]; then
   touch "$FAKE_BARRIER/$(basename "$PWD")"
   for ((n=0; n<100; n++)); do
@@ -84,7 +95,12 @@ runTest("Bash: Claude recebe somente MCPs permitidos nos dois modos", () => {
     const args = r.calls[0].args;
     assert.ok(args.includes("--strict-mcp-config"));
     assert.ok(args.includes("--mcp-config"));
-    assert.deepEqual(JSON.parse(args[args.indexOf("--mcp-config") + 1]), { mcpServers: { ok: { command: "fake-ok" } } });
+    // --mcp-config agora recebe caminho de arquivo (0600), nunca JSON inline
+    // em argv; o fake binario leu o conteudo no momento da chamada, antes do
+    // orquestrador remover o TMP_DIR no fim da execucao.
+    const mcpConfigPath = args[args.indexOf("--mcp-config") + 1];
+    assert.ok(!mcpConfigPath.trim().startsWith("{"), "--mcp-config nao deveria receber JSON inline");
+    assert.deepEqual(JSON.parse(r.calls[0].mcpConfigContent), { mcpServers: { ok: { command: "fake-ok" } } });
   }
 });
 

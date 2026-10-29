@@ -21,6 +21,10 @@ function ambiente() {
   for (const nome of ["claude", "codex", "agy"]) {
     fs.writeFileSync(path.join(falsos, `${nome}.ps1`), [
       `$registro = @{ engine = '${nome}'; args = @($args); cwd = (Get-Location).Path; stdin = [Console]::In.ReadToEnd() }`,
+      // Le o arquivo de --mcp-config AGORA (como o claude real leria), antes
+      // que o orquestrador o remova no cleanup de fim de execucao.
+      '$mcpIdx = [array]::IndexOf($args, "--mcp-config")',
+      'if ($mcpIdx -ge 0 -and ($mcpIdx + 1) -lt $args.Count -and (Test-Path -LiteralPath $args[$mcpIdx + 1])) { $registro.mcpConfigContent = Get-Content -LiteralPath $args[$mcpIdx + 1] -Raw }',
       '$registro | ConvertTo-Json -Compress -Depth 10 | Set-Content -LiteralPath ($env:FAKE_LOG + "." + $PID + ".json")',
       'if ($env:FAKE_TOUCH) { Set-Content criado-pelo-agente.txt x }',
       "'{}'",
@@ -153,7 +157,13 @@ test("Claude recebe somente MCPs permitidos em plan e execute", () => {
     const args = r.registros[0].args;
     assert.ok(args.includes("--strict-mcp-config"));
     assert.ok(args.includes("--mcp-config"));
-    assert.deepEqual(JSON.parse(args[args.indexOf("--mcp-config") + 1]), { mcpServers: { permitido: { command: "fake-ok" } } });
+    // --mcp-config agora recebe caminho de arquivo, nunca JSON inline em argv
+    // (evita credencial de servidor MCP visivel na lista de processos do SO).
+    // O fake CLI leu o arquivo no momento da chamada (como o claude real
+    // leria); ele não existe mais depois que o orquestrador termina e limpa.
+    const mcpConfigPath = args[args.indexOf("--mcp-config") + 1];
+    assert.ok(!mcpConfigPath.trim().startsWith("{"), "--mcp-config nao deveria receber JSON inline");
+    assert.deepEqual(JSON.parse(r.registros[0].mcpConfigContent), { mcpServers: { permitido: { command: "fake-ok" } } });
   }
   const vazio = a.rodar([{ engine: "claude", prompt: "teste", allow_mcp: [], mcp_servers: ["proibido"] }]);
   assert.equal(vazio.codigo, 0, vazio.saida);

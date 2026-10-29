@@ -47,19 +47,28 @@ if [[ -z "$MANIFEST_FILE" || ! -f "$MANIFEST_FILE" ]]; then
 fi
 
 TMP_DIR=$(mktemp -d /tmp/swarmv2_XXXXXX)
-declare -a WORKTREE_PATHS=() WORKTREE_BRANCHES=() WORKTREE_ROOTS=() WORKTREE_BASES=()
+declare -a WORKTREE_PATHS=() WORKTREE_BRANCHES=() WORKTREE_ROOTS=() WORKTREE_BASES=() WORKTREE_GITDIRS=()
 JOBS_STARTED=0
 JOBS_FINISHED=0
 
 cleanup_worktrees() {
-  local i wt root branch base dirty head
+  local i wt root branch base gitdir pointer dirty head
   for (( i=0; i<${#WORKTREE_PATHS[@]}; i++ )); do
     wt=${WORKTREE_PATHS[$i]}
     [[ -n "$wt" && -d "$wt" ]] || continue
     root=${WORKTREE_ROOTS[$i]}; branch=${WORKTREE_BRANCHES[$i]}; base=${WORKTREE_BASES[$i]}
+    gitdir=${WORKTREE_GITDIRS[$i]}
+    # O agente tem acesso de escrita na worktree: nunca confie no ponteiro
+    # $wt/.git para resolver o repositorio (poderia ser trocado por um symlink
+    # ou apontar pra um gitdir malicioso com hooks). Confirme que o ponteiro
+    # ainda bate com o gitdir capturado na criacao antes de rodar qualquer
+    # comando git, e resolva por --git-dir/--work-tree explicitos, nunca -C.
+    [[ -n "$gitdir" && -f "$wt/.git" && ! -L "$wt/.git" ]] || continue
+    pointer=$(cat "$wt/.git" 2>/dev/null) || continue
+    [[ "$pointer" == "gitdir: $gitdir" ]] || continue
     # Remove somente com prova de zero trabalho; qualquer duvida preserva a mesa.
-    dirty=$(git -C "$wt" status --porcelain --ignored 2>/dev/null) || continue
-    head=$(git -C "$wt" rev-parse HEAD 2>/dev/null) || continue
+    dirty=$(git --git-dir="$gitdir" --work-tree="$wt" -c core.fsmonitor=false -c core.hooksPath=/dev/null status --porcelain --ignored 2>/dev/null) || continue
+    head=$(git --git-dir="$gitdir" --work-tree="$wt" -c core.hooksPath=/dev/null rev-parse HEAD 2>/dev/null) || continue
     [[ -z "$dirty" && "$head" == "$base" ]] || continue
     [[ "$(git -C "$root" rev-parse "$branch" 2>/dev/null)" == "$base" ]] || continue
     if git -C "$root" worktree remove "$wt" 2>/dev/null && git -C "$root" branch -d "$branch" >/dev/null 2>&1; then
@@ -136,12 +145,20 @@ for (( i=0; i<TASK_COUNT; i++ )); do
       echo "MCP: mcp_config invalido ou servidor solicitado sem definicao" >&2; exit 1;
     }
   fi
-  MCP_CONFIGS+=("$V_CONFIG")
+  V_CONFIG_FILE=""
+  if [[ -n "$V_CONFIG" ]]; then
+    # O JSON filtrado pode conter credenciais dos servidores MCP permitidos;
+    # nunca vai em argv (visivel na lista de processos). Grava num arquivo
+    # 0600 dentro do TMP_DIR privado, removido no cleanup junto com o resto.
+    V_CONFIG_FILE="$TMP_DIR/mcp_${V_ID}.json"
+    ( umask 077; printf '%s' "$V_CONFIG" > "$V_CONFIG_FILE" )
+  fi
+  MCP_CONFIGS+=("$V_CONFIG_FILE")
 done
 
 # Preparar todas as mesas antes de iniciar clones. Falha nunca usa a pasta compartilhada.
 for (( i=0; i<TASK_COUNT; i++ )); do
-  WORKTREE_PATHS+=(""); WORKTREE_BRANCHES+=(""); WORKTREE_ROOTS+=(""); WORKTREE_BASES+=("")
+  WORKTREE_PATHS+=(""); WORKTREE_BRANCHES+=(""); WORKTREE_ROOTS+=(""); WORKTREE_BASES+=(""); WORKTREE_GITDIRS+=("")
   [[ "${NEED_WORKTREES[$i]}" -eq 1 ]] || continue
   V_ID=$(jq -r ".[$i].id // \"task_$i\"" "$MANIFEST_FILE")
   V_ROOT=$(git -C "${TASK_WORKDIRS[$i]}" rev-parse --show-toplevel 2>/dev/null) || {
@@ -157,8 +174,13 @@ for (( i=0; i<TASK_COUNT; i++ )); do
   git -C "$V_ROOT" worktree add -b "$V_BRANCH" "$V_PATH" "$V_BASE" >/dev/null 2>&1 || {
     echo "Tarefa '$V_ID': nao foi possivel criar a worktree isolada; nada foi executado" >&2; exit 1;
   }
+  # Captura o gitdir real agora, antes que o agente tenha qualquer chance de
+  # escrever na worktree: e a unica leitura do ponteiro .git em que confiamos.
+  V_GITDIR=$(git -C "$V_PATH" rev-parse --absolute-git-dir 2>/dev/null) || {
+    echo "Tarefa '$V_ID': nao foi possivel confirmar o gitdir da worktree; nada foi executado" >&2; exit 1;
+  }
   WORKTREE_PATHS[$i]="$V_PATH"; WORKTREE_BRANCHES[$i]="$V_BRANCH"
-  WORKTREE_ROOTS[$i]="$V_ROOT"; WORKTREE_BASES[$i]="$V_BASE"
+  WORKTREE_ROOTS[$i]="$V_ROOT"; WORKTREE_BASES[$i]="$V_BASE"; WORKTREE_GITDIRS[$i]="$V_GITDIR"
   TASK_WORKDIRS[$i]="$V_PATH"
 done
 
