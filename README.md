@@ -176,19 +176,23 @@ Why give all tools to all clones? A database clone doesn't need Playwright, and 
 
 | The Problem: "All MCPs for Everyone" | 🎯 Kage Bunshin Surgical Scoping (`mcp_servers`) |
 |---|---|
-| **Context Bloat:** 15k–30k tokens wasted per clone on MCP schemas | **Zero Waste:** Clones without tools load 0 schemas, saving 100k+ tokens across squads. |
-| **Tool Confusion:** 50+ tools cause models to call incorrect functions | **100% Precision:** Clones only see tools directly relevant to their subtask. |
-| **Accidental Mutations:** Read-only auditors could mutate live DBs | **Blast Radius Zero:** Non-backend clones physically lack database tools. |
-| **System Overhead:** 60+ OS processes spawned for MCP servers | **Lean Footprint:** Zero background processes spawned for tool-free clones. |
+| **Inherited tools:** User/project configuration can add unrequested servers | **Claude:** Always uses `--strict-mcp-config`; nonempty lists load only selected definitions from `mcp_config`. |
+| **Unsupported isolation:** A list alone does not restrict every CLI | **Fail closed:** agy is refused in both runners; Bash also refuses nonempty Codex lists. |
 
 Declare `mcp_servers` per clone in your manifest:
 ```json
 [
-  { "id": "c1-db", "engine": "codex", "mcp_servers": ["supabase"], "prompt": "Create DB migrations" },
-  { "id": "c2-ui", "engine": "claude", "mcp_servers": ["playwright"], "prompt": "Verify responsive UI layout" },
-  { "id": "c3-audit", "engine": "agy", "mcp_servers": [], "prompt": "Pure code audit (zero MCP overhead)" }
+  { "id": "c1-db", "engine": "claude", "mcp_config": "mcps.json", "mcp_servers": ["supabase"], "prompt": "Review DB migrations" },
+  { "id": "c2-ui", "engine": "claude", "mcp_config": "mcps.json", "mcp_servers": ["playwright"], "prompt": "Verify responsive UI layout" },
+  { "id": "c3-audit", "engine": "claude", "mcp_servers": [], "prompt": "Pure code audit" }
 ]
 ```
+
+`mcp_config` is a JSON file with a `mcpServers` object, resolved relative to the task's original working directory. Missing definitions fail before any clone or worktree starts. Only requested entries are forwarded; other user/project MCP configurations are ignored by Claude. `allow_mcp` takes precedence by presence, so `allow_mcp: []` explicitly disables MCPs even if `mcp_servers` is nonempty. Omitting both fields means an empty list.
+
+Codex with an empty list uses `--ignore-user-config` (also discards other user settings). The existing PowerShell nonempty Codex path only filters names found in the user TOML; it is not a verified isolation boundary for other configuration sources. agy's installed help does not expose a verified session MCP allowlist, so both runners refuse agy instead of inheriting all servers. Use Claude for an enforced nonempty allowlist.
+
+On Windows, `.cmd`/`.bat` CLI shims are refused because their shell parsing cannot safely carry arbitrary prompts. Install the native binary or a trusted `.ps1` launcher. The Bash runner honors `worktree: true` and `--worktree`, creates `task/swarmv2-<id>-<timestamp>` branches under `.worktrees/`, and aborts if isolation fails. It removes only unchanged worktrees and preserves work for review; it never merges results.
 
 ---
 

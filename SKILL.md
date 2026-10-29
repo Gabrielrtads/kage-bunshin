@@ -65,15 +65,17 @@ pwsh -File scripts/invoke-kage-bunshin.ps1 -ManifestPath examples/manifest-cost-
 
 ### 4. Surgical MCP Scoping per Clone (Tool Chakra Partitioning)
 
-Assign only the necessary MCP servers per clone to eliminate tool confusion, prevent accidental mutations, and save 15,000–30,000 prompt tokens per clone:
+Claude enforces the MCP allowlist with `--strict-mcp-config` and selected definitions from a task-relative `mcp_config` JSON file (`mcpServers` object). Missing definitions fail before execution. `allow_mcp` takes precedence, including an explicit empty list:
 
 ```json
 [
-  { "id": "c1-db", "engine": "codex", "worktree": true, "mcp_servers": ["supabase"], "prompt": "Create database migration" },
-  { "id": "c2-ui", "engine": "claude", "worktree": true, "mcp_servers": ["playwright"], "prompt": "Verify responsive UI layout" },
-  { "id": "c3-audit", "engine": "agy", "worktree": false, "mcp_servers": [], "prompt": "Security audit (Zero MCPs needed)" }
+  { "id": "c1-db", "engine": "claude", "worktree": true, "mcp_config": "mcps.json", "mcp_servers": ["supabase"], "prompt": "Review database migration" },
+  { "id": "c2-ui", "engine": "claude", "worktree": true, "mcp_config": "mcps.json", "mcp_servers": ["playwright"], "prompt": "Verify responsive UI layout" },
+  { "id": "c3-audit", "engine": "claude", "worktree": false, "mcp_servers": [], "prompt": "Security audit" }
 ]
 ```
+
+Both runners refuse agy because session MCP isolation is unverified. Bash refuses nonempty Codex lists; empty lists use `--ignore-user-config`. PowerShell's existing nonempty Codex user-TOML filter is not a verified boundary across other config sources. Prefer Claude for enforced nonempty lists. Windows runners refuse `.cmd`/`.bat` shims; use a native binary or a trusted `.ps1` launcher. Bash creates requested worktrees before starting clones and fails closed if creation fails.
 
 ---
 

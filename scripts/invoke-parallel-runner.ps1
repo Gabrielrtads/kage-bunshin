@@ -36,7 +36,54 @@ function Get-ExecutableCommand {
     if (-not $command.Source) {
         throw "CLI '$Name' nao possui um caminho executavel resolvido no PATH."
     }
+    # ArgumentList protege argv nativo, mas nao a reinterpretacao feita pelo cmd.exe.
+    if ([System.IO.Path]::GetExtension($command.Source) -in @('.cmd', '.bat')) {
+        throw "CLI '$Name': shim cmd/bat recusado; instale o binario nativo ou um launcher .ps1 seguro."
+    }
     return $command
+}
+
+function Get-TaskMcpPolicy {
+    param([hashtable]$Task, [string]$Motor, [string]$TaskDirectory)
+
+    $names = @()
+    $field = if ($Task.ContainsKey('allow_mcp')) { 'allow_mcp' } else { 'mcp_servers' }
+    if ($Task.ContainsKey($field)) {
+        if ($Task[$field] -isnot [array]) { throw "$field deve ser uma lista de nomes MCP." }
+        $names = @($Task[$field])
+        foreach ($name in $names) {
+            if ($name -isnot [string] -or $name -cnotmatch '\A[A-Za-z0-9_-]{1,80}\z') {
+                throw "$field contem nome MCP invalido."
+            }
+        }
+    }
+    if ($Motor -eq 'agy') {
+        throw 'MCP: agy nao oferece isolamento por sessao comprovado; use claude ou codex. Nada foi executado.'
+    }
+    $configJson = $null
+    if ($Motor -eq 'claude' -and $names.Count -gt 0) {
+        if (-not $Task.ContainsKey('mcp_config') -or -not $Task['mcp_config']) {
+            throw 'MCP: lista Claude nao vazia exige mcp_config (JSON com mcpServers); nada foi executado.'
+        }
+        try {
+            $sourcePath = [string]$Task['mcp_config']
+            if (-not [System.IO.Path]::IsPathRooted($sourcePath)) { $sourcePath = Join-Path $TaskDirectory $sourcePath }
+            $config = Get-Content -LiteralPath $sourcePath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable
+            if ($config['mcpServers'] -isnot [System.Collections.IDictionary]) { throw 'Formato invalido' }
+            $filtered = @{}
+            foreach ($name in $names) {
+                if (-not $config['mcpServers'].Contains($name) -or $config['mcpServers'][$name] -isnot [System.Collections.IDictionary]) {
+                    throw 'Servidor ausente ou invalido'
+                }
+                $filtered[$name] = $config['mcpServers'][$name]
+            }
+            $configJson = @{ mcpServers = $filtered } | ConvertTo-Json -Compress -Depth 100
+        } catch {
+            # O arquivo pode conter credenciais: nao ecoar conteudo nem erro do parser.
+            throw 'MCP: mcp_config invalido ou servidor solicitado sem definicao; nada foi executado.'
+        }
+    }
+    return @{ Names = $names; ConfigJson = $configJson }
 }
 
 function Get-CodexMcpNames {
@@ -147,6 +194,9 @@ for ($i = 0; $i -lt $parsedTasks.Count; $i++) {
     $motor = if ($t.ContainsKey('engine') -and $t['engine']) { [string]$t['engine'] } else { $Engine }
     $modo = if ($t.ContainsKey('mode') -and $t['mode']) { [string]$t['mode'] } else { 'plan' }
     $esforco = if ($t.ContainsKey('effort') -and $t['effort']) { [string]$t['effort'] } else { $null }
+    if ($t.ContainsKey('model') -and ($t['model'] -isnot [string] -or $t['model'] -cnotmatch '\A[A-Za-z0-9._:-]{1,80}\z')) {
+        throw "Tarefa '$id': model invalido (use 1..80 letras, numeros, . _ : -)."
+    }
     $limite = if ($t.ContainsKey('timeout_seconds') -and $t['timeout_seconds']) { [int]$t['timeout_seconds'] } else { $TimeoutSeconds }
     if ($id -notmatch '^[A-Za-z0-9_-]{1,64}$') { throw "Tarefa com id invalido: '$id' (use letras, numeros, - e _)." }
     if ($motor -notin @('claude', 'codex', 'agy')) { throw "Tarefa '$id': motor invalido '$motor'." }
@@ -154,7 +204,21 @@ for ($i = 0; $i -lt $parsedTasks.Count; $i++) {
     if ($esforco -and $esforco -notin @('low', 'medium', 'high', 'xhigh', 'max')) { throw "Tarefa '$id': effort invalido '$esforco'." }
     if ($limite -lt 1 -or $limite -gt 7200) { throw "Tarefa '$id': timeout_seconds fora de 1..7200." }
     if (-not ($t.ContainsKey('prompt') -and $t['prompt'])) { throw "Tarefa '$id' nao possui 'prompt'." }
+    $diretorio = if ($t.ContainsKey('working_directory') -and $t['working_directory']) {
+        (Resolve-Path -LiteralPath $t['working_directory'] -ErrorAction Stop).Path
+    } else { $resolvedWorkdir }
+    $t['_mcpPolicy'] = Get-TaskMcpPolicy -Task $t -Motor $motor -TaskDirectory $diretorio
+    $t['_cliCommand'] = Get-ExecutableCommand -Name $motor
 }
+
+# Diretorio privado para configs de MCP filtradas (podem conter credenciais dos
+# servidores permitidos). Nunca vai em argv: a lista de processos e visivel a
+# qualquer outro processo do mesmo usuario.
+$mcpConfigDir = Join-Path $env:TEMP ("swarmv2-mcp-" + [guid]::NewGuid().ToString('N'))
+[void](New-Item -ItemType Directory -Path $mcpConfigDir -Force)
+try {
+    icacls $mcpConfigDir /inheritance:r /grant:r "$($env:USERNAME):(OI)(CI)F" 2>&1 | Out-Null
+} catch {}
 
 $activeJobs = [System.Collections.Generic.List[PSCustomObject]]::new()
 $taskIndex = 0
@@ -173,13 +237,7 @@ foreach ($task in $parsedTasks) {
         $resolvedWorkdir
     }
     $taskTimeout = if ($task.ContainsKey('timeout_seconds') -and $task['timeout_seconds']) { [int]$task['timeout_seconds'] } else { $TimeoutSeconds }
-    $taskAllowMcp = if ($task.ContainsKey('allow_mcp') -and $task['allow_mcp']) {
-        @($task['allow_mcp'])
-    } elseif ($task.ContainsKey('mcp_servers') -and $task['mcp_servers']) {
-        @($task['mcp_servers'])
-    } else {
-        @()
-    }
+    $taskAllowMcp = @($task['_mcpPolicy'].Names)
     $taskNeedWorktree = if ($task.ContainsKey('worktree') -and $task['worktree']) { [bool]$task['worktree'] } else { $UseWorktreeForEdits.IsPresent }
 
     # O manifesto e entrada externa: so valores conhecidos chegam a git e aos CLIs.
@@ -228,28 +286,35 @@ foreach ($task in $parsedTasks) {
     }
 
     # Montar argumentos do motor
-    $cliCommand = Get-ExecutableCommand -Name $taskEngine
+    $cliCommand = $task['_cliCommand']
     $arguments = [System.Collections.Generic.List[string]]::new()
     $promptViaStdin = $false
 
     switch ($taskEngine) {
         'claude' {
             [void]$arguments.Add('-p')
-            [void]$arguments.Add($taskPrompt)
+            # Prompt e dado, inclusive quando comeca por --mcp-config ou --help.
+            $promptViaStdin = $true
             [void]$arguments.Add('--permission-prompts')
             [void]$arguments.Add('none')
             if ($taskMode -eq 'plan') {
                 [void]$arguments.Add('--permission-mode')
                 [void]$arguments.Add('plan')
                 [void]$arguments.Add('--restricted')
-                [void]$arguments.Add('--strict-mcp-config')
             } else {
                 # acceptEdits: edita so dentro da pasta; comando arriscado e negado (testado).
                 [void]$arguments.Add('--permission-mode')
                 [void]$arguments.Add('acceptEdits')
-                if (@($taskAllowMcp).Length -eq 0) {
-                    [void]$arguments.Add('--strict-mcp-config')
-                }
+            }
+            [void]$arguments.Add('--strict-mcp-config')
+            if ($task['_mcpPolicy'].ConfigJson) {
+                # Grava em arquivo (0600 equivalente via icacls) em vez de argv:
+                # --mcp-config aceita arquivo JSON ou string, e o arquivo nao
+                # aparece na lista de processos nem em logs de auditoria do SO.
+                $mcpConfigFile = Join-Path $mcpConfigDir ("$taskId.json")
+                Set-Content -LiteralPath $mcpConfigFile -Value $task['_mcpPolicy'].ConfigJson -NoNewline -Encoding UTF8
+                [void]$arguments.Add('--mcp-config')
+                [void]$arguments.Add($mcpConfigFile)
             }
             [void]$arguments.Add('--output-format')
             [void]$arguments.Add('json')
@@ -334,6 +399,13 @@ foreach ($task in $parsedTasks) {
     $psi.RedirectStandardInput = $true
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
+    # Sem isso, .NET usa a codepage OEM do console (nao UTF-8) e corrompe
+    # acentos/caracteres multibyte no prompt e na saida no Windows.
+    # UTF8Encoding($false) evita escrever BOM no stdin do processo filho.
+    $utf8SemBom = [System.Text.UTF8Encoding]::new($false)
+    $psi.StandardInputEncoding = $utf8SemBom
+    $psi.StandardOutputEncoding = $utf8SemBom
+    $psi.StandardErrorEncoding = $utf8SemBom
 
     if ($cliCommand.Source -match '\.ps1$') {
         $pwsh = Get-ExecutableCommand -Name 'pwsh'
@@ -524,6 +596,8 @@ foreach ($job in $activeJobs) {
         }
     }
 }
+
+Remove-Item -LiteralPath $mcpConfigDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # 5. Consolidacao e Apresentacao dos Resultados (Fan-In)
 $successCount = @($activeJobs | Where-Object { $_.Status -eq 'success' }).Count

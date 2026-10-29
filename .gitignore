@@ -1,4 +1,5 @@
 .worktrees/
+.test-tmp/
 node_modules/
 *.log
 *.tmp
