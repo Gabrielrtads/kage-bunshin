@@ -20,6 +20,9 @@ function ambiente() {
   fs.mkdirSync(falsos);
   for (const nome of ["claude", "codex", "agy"]) {
     fs.writeFileSync(path.join(falsos, `${nome}.ps1`), [
+      // CLIs reais decodificam stdin como UTF-8 bytes crus; sem isso o
+      // PowerShell le com a codepage OEM do console e corrompe acentos.
+      '[Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)',
       `$registro = @{ engine = '${nome}'; args = @($args); cwd = (Get-Location).Path; stdin = [Console]::In.ReadToEnd() }`,
       // Le o arquivo de --mcp-config AGORA (como o claude real leria), antes
       // que o orquestrador o remova no cleanup de fim de execucao.

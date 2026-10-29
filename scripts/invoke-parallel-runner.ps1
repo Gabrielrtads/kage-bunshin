@@ -399,6 +399,13 @@ foreach ($task in $parsedTasks) {
     $psi.RedirectStandardInput = $true
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
+    # Sem isso, .NET usa a codepage OEM do console (nao UTF-8) e corrompe
+    # acentos/caracteres multibyte no prompt e na saida no Windows.
+    # UTF8Encoding($false) evita escrever BOM no stdin do processo filho.
+    $utf8SemBom = [System.Text.UTF8Encoding]::new($false)
+    $psi.StandardInputEncoding = $utf8SemBom
+    $psi.StandardOutputEncoding = $utf8SemBom
+    $psi.StandardErrorEncoding = $utf8SemBom
 
     if ($cliCommand.Source -match '\.ps1$') {
         $pwsh = Get-ExecutableCommand -Name 'pwsh'
